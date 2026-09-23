@@ -24,12 +24,6 @@ section at the bottom on wiring one in.
 What you do get, at no running cost: sixteen effects, real-time preview, unlimited
 free use, video export, and a working accounts-and-billing skeleton.
 
-**I have not seen these effects render.** I verified the code compiles, that every
-effect runs without exceptions or NaN geometry, and that the Next.js build passes.
-Whether each one actually looks good on your photographs is something only you can
-judge. Expect to tune the constants.
-
----
 
 ## Two ways to run this
 
@@ -80,94 +74,7 @@ OAuth client, then redirect URIs.
 
 ---
 
-## Deploying free
 
-**Free domain names, the honest version.** The thing you're probably thinking of —
-Freenom's free `.tk`, `.ml`, `.ga`, `.cf`, `.gq` — is gone. Freenom stopped new
-registrations in 2023 after a lawsuit from Meta and announced in February 2024 that it
-was exiting the domain business entirely. There is no comparable free registrar left
-that I'd point you to.
-
-What's actually free and works today is a **subdomain from your host**:
-
-| Host | Free domain | Runs this app? |
-|---|---|---|
-| Vercel | `yourapp.vercel.app` | Yes — best fit for Next.js |
-| Netlify | `yourapp.netlify.app` | Yes, with their Next adapter |
-| Cloudflare Pages | `yourapp.pages.dev` | Yes, with some config |
-| Render | `yourapp.onrender.com` | Yes |
-| GitHub Pages | `you.github.io` | Standalone HTML only — no server |
-
-There are also community subdomain registries (`is-a.dev`, `js.org`, `eu.org`) that
-give out free names under their domain, usually by pull request or application with
-eligibility rules. I haven't verified their current terms — check before relying on one.
-
-A real `.com` is roughly USD 10–15 a year. If this becomes a product, buy one.
-
-### Vercel steps
-
-1. Push to GitHub.
-2. Import the repo at vercel.com.
-3. Switch the Prisma datasource in `prisma/schema.prisma` from `sqlite` to
-   `postgresql`. Serverless functions have an ephemeral filesystem — a SQLite file
-   will not survive. Free Postgres is available from Neon, Supabase and Vercel itself;
-   free-tier limits change, so check current terms.
-4. Add every variable from `.env.example` in Vercel's project settings.
-5. Set `NEXTAUTH_URL` to your real `https://` URL.
-6. Add the production callback URL to your Google OAuth client.
-7. Deploy, then run `npx prisma db push` against the production `DATABASE_URL` once.
-
----
-
-## Payments
-
-### Stripe will probably not work for you
-
-You're in Bangladesh. Based on what I could find, Stripe does not support Bangladesh as
-a merchant country — a Bangladesh-registered business cannot open a Stripe account
-directly. Your *customers* in Bangladesh can pay a Stripe checkout with a Visa or
-Mastercard; the restriction is on where the merchant is, not the payer.
-
-I could not verify this against Stripe's own documentation — my sources were secondary.
-**Check Stripe's official supported-countries page before you plan around this.**
-
-Common workarounds, none of which I'm recommending, all of which have real cost and
-legal weight: forming a company in a supported country (US LLC, UK Ltd, Singapore),
-or using a merchant-of-record service that sells on your behalf. Getting these wrong
-creates tax and compliance problems, so talk to an accountant rather than a blog post.
-
-### The realistic options for a Bangladesh-based merchant
-
-- **SSLCommerz** — the most widely used local gateway
-- **aamarPay**, **ShurjoPay** — comparable local gateways
-- **bKash Payment Gateway** — for mobile wallet payments
-- **Payoneer Checkout**, **2Checkout/Verifone** — for international customers
-
-I don't have verified, current API specifications for any of these, so I have **not**
-written integration code that I can't stand behind. `lib/payments/local-gateway.js` is
-a deliberately empty stub with the interface it needs to satisfy. Fill it in from the
-merchant docs your provider hands you at onboarding.
-
-### How payments are wired
-
-Everything goes through `lib/payments/index.js`. Set `PAYMENT_PROVIDER` to:
-
-- `none` — buttons are visibly disabled, the rest of the app works normally
-- `stripe` — the reference implementation, fully written
-- `local` — your gateway, once you implement the stub
-
-Credits are granted **only** by the signature-verified webhook at
-`/api/stripe/webhook`. The `success_url` redirect is not proof of payment — anyone can
-type that URL. If you implement a local gateway, hold that line: verify server-to-server
-against the gateway's own validation endpoint before granting anything.
-
-Test the webhook locally:
-
-```bash
-stripe listen --forward-to localhost:3000/api/stripe/webhook
-```
-
----
 
 ## Known limitations
 
